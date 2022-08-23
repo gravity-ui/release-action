@@ -2,10 +2,10 @@
 
 ## What is it?
 It is a [GitHub action](https://github.com/features/actions), that does the following things:
-- when you push new commits into `master` branch (or any other branch you designate in `on.push.branches` field),
+- when you push new commits into `main` branch (or any other branch you designate in `on.push.branches` field),
   a release PR is created which includes an automatically generated CHANGELOG.md and bumped NPM version, all this is
   done according to [conventional commits spec](https://www.conventionalcommits.org/en/v1.0.0/)
-- in case any new code is merged into `master` while that release PR is still open, it will be either updated (if bump
+- in case any new code is merged into `main` while that release PR is still open, it will be either updated (if bump
   type stays the same) or recreated (if bump type changes)
 - once the maintainer is ready to publish a new package version, he merges the release PR
 - package unit tests are run (at least `"test": "exit 0"` should be defined in `package.json`)
@@ -25,7 +25,7 @@ name: Release
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   release:
@@ -33,8 +33,8 @@ jobs:
     steps:
       - uses: gravity-ui/release-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          npm-token: ${{ secrets.NPM_TOKEN }}
+          github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
+          npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
 ```
 
 ### Early development
