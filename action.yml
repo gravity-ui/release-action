@@ -16,6 +16,9 @@ inputs:
   npm-token:
     description: PAT of an NPM user which publishes the package
     required: true
+  default-branch:
+    description: branch to open release PR against (detected by default)
+    required: false
 
 outputs:
   release-created:
@@ -44,6 +47,7 @@ runs:
       package-name: ${{ steps.package.outputs.name }}
       changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
       bump-minor-pre-major: true
+      default-branch: ${{ inputs.default-branch }}
   - run: npm publish --access public
     env:
       NODE_AUTH_TOKEN: ${{ inputs.npm-token }}

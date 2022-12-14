@@ -18,6 +18,7 @@ Create the file `.github/workflows/release.yml` at the root of your repo, provid
 - `github-token` (who does create release PR)
 - `npm-token` (who does publish NPM package)
 - `node-version`, optional - which node version to use for running unit tests.
+- `default-branch`, optional - branch to open release PR against.
 
 The file looks roughly like, you can change target branch, tokens and node version.
 ```yaml
