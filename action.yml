@@ -19,6 +19,12 @@ inputs:
   default-branch:
     description: branch to open release PR against (detected by default)
     required: false
+  npm-dist-tag:
+    description: command for publish npm version
+    required: false
+  prerelease:
+    description: property for prerelease package version
+    required: false
 
 outputs:
   release-created:
@@ -48,7 +54,8 @@ runs:
       changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
       bump-minor-pre-major: true
       default-branch: ${{ inputs.default-branch }}
-  - run: npm publish --access public
+      prerelease: ${{ inputs.prerelease }}
+  - run: npm publish ${{ inputs.npm-dist-tag }} --access public
     env:
       NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
     if: ${{ steps.release.outputs.release_created }}
