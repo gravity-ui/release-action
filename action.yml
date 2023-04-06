@@ -22,6 +22,7 @@ inputs:
   npm-dist-tag:
     description: command for publish npm version
     required: false
+    default: '--latest'
   prerelease:
     description: property for prerelease package version
     required: false
@@ -55,7 +56,7 @@ runs:
       bump-minor-pre-major: true
       default-branch: ${{ inputs.default-branch }}
       prerelease: ${{ inputs.prerelease }}
-  - run: npm publish ${{ inputs.npm-dist-tag }} --access public
+  - run: npm publish --tag ${{ inputs.npm-dist-tag }} --access public
     env:
       NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
     if: ${{ steps.release.outputs.release_created }}
