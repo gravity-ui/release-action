@@ -26,6 +26,9 @@ inputs:
   prerelease:
     description: property for prerelease package version
     required: false
+  manual-version:
+    description: the version of the package that is specified manually
+    required: false
 
 outputs:
   release-created:
@@ -35,29 +38,58 @@ outputs:
 runs:
   using: composite
   steps:
-  - uses: actions/checkout@v3
-  - uses: actions/setup-node@v3
-    with:
-      node-version: ${{ inputs.node-version }}
-      registry-url: 'https://registry.npmjs.org'
-  - run: npm ci
-    shell: bash
-  - run: npm test
-    shell: bash
-  - uses: codex-team/action-nodejs-package-info@v1
-    id: package
-  - uses: google-github-actions/release-please-action@v3
-    id: release
-    with:
-      token: ${{ inputs.github-token }}
-      release-type: node
-      package-name: ${{ steps.package.outputs.name }}
-      changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
-      bump-minor-pre-major: true
-      default-branch: ${{ inputs.default-branch }}
-      prerelease: ${{ inputs.prerelease }}
-  - run: npm publish --tag ${{ inputs.npm-dist-tag }} --access public
-    env:
-      NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-    if: ${{ steps.release.outputs.release_created }}
-    shell: bash
+    - run: |
+        echo "prerelease: ${{ inputs.prerelease }}"
+        echo "npm-dist-tag: ${{ inputs.npm-dist-tag }}"
+        if [ "${{ inputs.manual-version }}" != "" && ${{ inputs.prerelease }} == 'true']; then
+          if [[ "${{ inputs.manual-version }}" != *"${{ inputs.npm-dist-tag }}"* ]]; then
+             echo "Manual version set incorrectly! Check that is contains "${{ inputs.npm-dist-tag }}" in it's name"
+            exit 1
+          fi
+        fi
+      shell: bash
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://registry.npmjs.org'
+    - run: npm ci
+      shell: bash
+    - run: npm test
+      shell: bash
+    - uses: codex-team/action-nodejs-package-info@v1
+      if: inputs.prerelease == ''
+      id: package
+    - uses: google-github-actions/release-please-action@v3
+      if: inputs.prerelease == ''
+      id: release
+      with:
+        token: ${{ inputs.github-token }}
+        release-type: node
+        package-name: ${{ steps.package.outputs.name }}
+        changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
+        bump-minor-pre-major: true
+        default-branch: ${{ inputs.default-branch }}
+    - name: Bump and commit prerelease version
+      if: inputs.prerelease == 'true'
+      run: |
+        echo "${{ inputs.manual-version }}"
+        echo "${{ inputs.npm-dist-tag }}"
+        if [ "${{ inputs.manual-version }}" == "" ]; then
+          npm version prerelease --preid=${{ inputs.npm-dist-tag }} --git-tag-version=false
+        else
+          npm version ${{ inputs.manual-version }} --git-tag-version=false
+        fi
+      shell: bash
+    - name: Publish version
+      run: |
+        echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
+        echo "inputs.prerelease: ${{ inputs.prerelease }}"
+        echo "${{ steps.release.outputs.release_created }} == 'true'"
+        echo "${{ inputs.prerelease }} == 'true'"
+        echo "steps.release.outputs.release_created == 'true'"
+        npm publish --tag ${{ inputs.npm-dist-tag }} --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+      if: steps.release.outputs.release_created == 'true' || inputs.prerelease == 'true'
+      shell: bash
