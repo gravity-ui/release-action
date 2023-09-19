@@ -85,9 +85,6 @@ runs:
       run: |
         echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
         echo "inputs.prerelease: ${{ inputs.prerelease }}"
-        echo "${{ steps.release.outputs.release_created }} == 'true'"
-        echo "${{ inputs.prerelease }} == 'true'"
-        echo "steps.release.outputs.release_created == 'true'"
         npm publish --tag ${{ inputs.npm-dist-tag }} --access public
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
