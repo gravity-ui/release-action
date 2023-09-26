@@ -75,10 +75,14 @@ runs:
       run: |
         echo "${{ inputs.manual-version }}"
         echo "${{ inputs.npm-dist-tag }}"
+        
+        git config --local user.email "111915794+gravity-ui-bot@users.noreply.github.com"
+        git config --local user.name "gravity-ui-bot"
+        
         if [ "${{ inputs.manual-version }}" == "" ]; then
-          npm version prerelease --preid=${{ inputs.npm-dist-tag }} --git-tag-version=false
+          npm version prerelease --preid=${{ inputs.npm-dist-tag }}
         else
-          npm version ${{ inputs.manual-version }} --git-tag-version=false
+          npm version ${{ inputs.manual-version }}
         fi
       shell: bash
     - name: Extract branch name
@@ -91,7 +95,7 @@ runs:
       if: inputs.prerelease == 'true'
       uses: ad-m/github-push-action@master
       with:
-        github_token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
+        github_token: ${{ inputs.github-token }}
         branch: ${{ env.branch_name }}
     - name: Publish version
       run: |
