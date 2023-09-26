@@ -81,6 +81,18 @@ runs:
           npm version ${{ inputs.manual-version }} --git-tag-version=false
         fi
       shell: bash
+    - name: Extract branch name
+      if: inputs.prerelease == 'true'
+      shell: bash
+      run: |
+        echo "branch_name=${GITHUB_REF#refs/heads/}" >> "$GITHUB_ENV"
+      id: extract_branch
+    - name: Push changes
+      if: inputs.prerelease == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
+        branch: ${{ env.branch_name }}
     - name: Publish version
       run: |
         echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
