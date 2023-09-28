@@ -41,7 +41,13 @@ runs:
     - run: |
         echo "prerelease: ${{ inputs.prerelease }}"
         echo "npm-dist-tag: ${{ inputs.npm-dist-tag }}"
-        if [ "${{ inputs.manual-version }}" != "" && ${{ inputs.prerelease }} == 'true']; then
+        
+        if [ ${{ inputs.prerelease }} != "" ]; then
+          echo "prerelease is not empty!"
+        fi
+    
+        if [ "${{ inputs.manual-version }}" != "" && ${{ inputs.prerelease }} != "" ]; then
+          echo "prerelease is not empty!"
           if [[ "${{ inputs.manual-version }}" != *"${{ inputs.npm-dist-tag }}"* ]]; then
              echo "Manual version set incorrectly! Check that is contains "${{ inputs.npm-dist-tag }}" in it's name"
             exit 1
@@ -71,28 +77,29 @@ runs:
         bump-minor-pre-major: true
         default-branch: ${{ inputs.default-branch }}
     - name: Bump and commit prerelease version
-      if: inputs.prerelease == 'true'
+      if: inputs.prerelease != ''
       run: |
         echo "${{ inputs.manual-version }}"
         echo "${{ inputs.npm-dist-tag }}"
-        
+        echo "${{ inputs.prerelease }}"
+
         git config --local user.email "111915794+gravity-ui-bot@users.noreply.github.com"
         git config --local user.name "gravity-ui-bot"
-        
+
         if [ "${{ inputs.manual-version }}" == "" ]; then
-          npm version prerelease --preid=${{ inputs.npm-dist-tag }}
+          npm version ${{ inputs.prerelease }} --preid=${{ inputs.npm-dist-tag }}
         else
           npm version ${{ inputs.manual-version }}
         fi
       shell: bash
     - name: Extract branch name
-      if: inputs.prerelease == 'true'
+      if: inputs.prerelease != ''
       shell: bash
       run: |
         echo "branch_name=${GITHUB_REF#refs/heads/}" >> "$GITHUB_ENV"
       id: extract_branch
     - name: Push changes
-      if: inputs.prerelease == 'true'
+      if: inputs.prerelease != ''
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ inputs.github-token }}
@@ -100,9 +107,8 @@ runs:
     - name: Publish version
       run: |
         echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
-        echo "inputs.prerelease: ${{ inputs.prerelease }}"
         npm publish --tag ${{ inputs.npm-dist-tag }} --access public
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-      if: steps.release.outputs.release_created == 'true' || inputs.prerelease == 'true'
+      if: steps.release.outputs.release_created == 'true' || inputs.prerelease != ''
       shell: bash
