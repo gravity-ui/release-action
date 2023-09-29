@@ -41,6 +41,16 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Check inputs
+      run: |
+        echo "${{ inputs.npm-version }}"
+        echo "${{ inputs.npm-dist-tag }}"
+        echo "${{ inputs.npm-preid }}"
+        echo "${{ inputs.prerelease }}"
+      
+        echo "${{ inputs.default-branch }}"
+        echo "${{ inputs.node-version }}"
+      shell: bash
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
