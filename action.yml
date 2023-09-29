@@ -26,8 +26,11 @@ inputs:
   prerelease:
     description: property for prerelease package version
     required: false
-  manual-version:
-    description: the version of the package that is specified manually
+  npm-version:
+    description: the version of the package
+    required: false
+  npm-preid:
+    description:  npm version prerelease identifier, e.g preid=alpha gives you npm package version as v1.1.1-alpha.0
     required: false
 
 outputs:
@@ -38,22 +41,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - run: |
-        echo "prerelease: ${{ inputs.prerelease }}"
-        echo "npm-dist-tag: ${{ inputs.npm-dist-tag }}"
-        
-        if [ ${{ inputs.prerelease }} != "" ]; then
-          echo "prerelease is not empty!"
-        fi
-    
-        if [ "${{ inputs.manual-version }}" != "" && ${{ inputs.prerelease }} != "" ]; then
-          echo "prerelease is not empty!"
-          if [[ "${{ inputs.manual-version }}" != *"${{ inputs.npm-dist-tag }}"* ]]; then
-             echo "Manual version set incorrectly! Check that is contains "${{ inputs.npm-dist-tag }}" in it's name"
-            exit 1
-          fi
-        fi
-      shell: bash
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
@@ -64,10 +51,10 @@ runs:
     - run: npm test
       shell: bash
     - uses: codex-team/action-nodejs-package-info@v1
-      if: inputs.prerelease == ''
+      if: inputs.npm-version == ''
       id: package
     - uses: google-github-actions/release-please-action@v3
-      if: inputs.prerelease == ''
+      if: inputs.npm-version == ''
       id: release
       with:
         token: ${{ inputs.github-token }}
@@ -76,30 +63,27 @@ runs:
         changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
         bump-minor-pre-major: true
         default-branch: ${{ inputs.default-branch }}
+        prerelease: ${{ inputs.prerelease }}
     - name: Bump and commit prerelease version
-      if: inputs.prerelease != ''
+      if: inputs.npm-version != ''
       run: |
-        echo "${{ inputs.manual-version }}"
+        echo "${{ inputs.npm-version }}"
         echo "${{ inputs.npm-dist-tag }}"
-        echo "${{ inputs.prerelease }}"
+        echo "${{ inputs.npm-preid }}"
 
         git config --local user.email "111915794+gravity-ui-bot@users.noreply.github.com"
         git config --local user.name "gravity-ui-bot"
-
-        if [ "${{ inputs.manual-version }}" == "" ]; then
-          npm version ${{ inputs.prerelease }} --preid=${{ inputs.npm-dist-tag }}
-        else
-          npm version ${{ inputs.manual-version }}
-        fi
+        
+        npm version ${{ inputs.npm-version }} --preid=${{ inputs.npm-preid }}
       shell: bash
     - name: Extract branch name
-      if: inputs.prerelease != ''
+      if: inputs.npm-version != ''
       shell: bash
       run: |
         echo "branch_name=${GITHUB_REF#refs/heads/}" >> "$GITHUB_ENV"
       id: extract_branch
     - name: Push changes
-      if: inputs.prerelease != ''
+      if: inputs.npm-version != ''
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ inputs.github-token }}
@@ -110,5 +94,5 @@ runs:
         npm publish --tag ${{ inputs.npm-dist-tag }} --access public
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-      if: steps.release.outputs.release_created == 'true' || inputs.prerelease != ''
+      if: steps.release.outputs.release_created == 'true' || inputs.npm-version != ''
       shell: bash
