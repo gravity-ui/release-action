@@ -26,6 +26,12 @@ inputs:
   prerelease:
     description: property for prerelease package version
     required: false
+  npm-version:
+    description: the version of the package
+    required: false
+  npm-preid:
+    description:  npm version prerelease identifier, e.g preid=alpha gives you npm package version as v1.1.1-alpha.0
+    required: false
 
 outputs:
   release-created:
@@ -35,29 +41,68 @@ outputs:
 runs:
   using: composite
   steps:
-  - uses: actions/checkout@v3
-  - uses: actions/setup-node@v3
-    with:
-      node-version: ${{ inputs.node-version }}
-      registry-url: 'https://registry.npmjs.org'
-  - run: npm ci
-    shell: bash
-  - run: npm test
-    shell: bash
-  - uses: codex-team/action-nodejs-package-info@v1
-    id: package
-  - uses: google-github-actions/release-please-action@v3
-    id: release
-    with:
-      token: ${{ inputs.github-token }}
-      release-type: node
-      package-name: ${{ steps.package.outputs.name }}
-      changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
-      bump-minor-pre-major: true
-      default-branch: ${{ inputs.default-branch }}
-      prerelease: ${{ inputs.prerelease }}
-  - run: npm publish --tag ${{ inputs.npm-dist-tag }} --access public
-    env:
-      NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-    if: ${{ steps.release.outputs.release_created }}
-    shell: bash
+    - name: Check inputs
+      run: |
+        echo "${{ inputs.npm-version }}"
+        echo "${{ inputs.npm-dist-tag }}"
+        echo "${{ inputs.npm-preid }}"
+        echo "${{ inputs.prerelease }}"
+      
+        echo "${{ inputs.default-branch }}"
+        echo "${{ inputs.node-version }}"
+      shell: bash
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://registry.npmjs.org'
+    - run: npm ci
+      shell: bash
+    - run: npm test
+      shell: bash
+    - uses: codex-team/action-nodejs-package-info@v1
+      if: inputs.npm-version == ''
+      id: package
+    - uses: google-github-actions/release-please-action@v3
+      if: inputs.npm-version == ''
+      id: release
+      with:
+        token: ${{ inputs.github-token }}
+        release-type: node
+        package-name: ${{ steps.package.outputs.name }}
+        changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
+        bump-minor-pre-major: true
+        default-branch: ${{ inputs.default-branch }}
+        prerelease: ${{ inputs.prerelease }}
+    - name: Bump and commit prerelease version
+      if: inputs.npm-version != ''
+      run: |
+        echo "${{ inputs.npm-version }}"
+        echo "${{ inputs.npm-dist-tag }}"
+        echo "${{ inputs.npm-preid }}"
+
+        git config --local user.email "111915794+gravity-ui-bot@users.noreply.github.com"
+        git config --local user.name "gravity-ui-bot"
+        
+        npm version ${{ inputs.npm-version }} --preid=${{ inputs.npm-preid }}
+      shell: bash
+    - name: Extract branch name
+      if: inputs.npm-version != ''
+      shell: bash
+      run: |
+        echo "branch_name=${GITHUB_REF#refs/heads/}" >> "$GITHUB_ENV"
+      id: extract_branch
+    - name: Push changes
+      if: inputs.npm-version != ''
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ inputs.github-token }}
+        branch: ${{ env.branch_name }}
+    - name: Publish version
+      run: |
+        echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
+        npm publish --tag ${{ inputs.npm-dist-tag }} --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+      if: steps.release.outputs.release_created == 'true' || inputs.npm-version != ''
+      shell: bash
