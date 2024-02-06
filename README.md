@@ -21,7 +21,7 @@ Create the file `.github/workflows/release.yml` at the root of your repo, provid
 - `default-branch`, optional - branch to open release PR against.
 - `npm-dist-tag`, optional - if you want to release version of package with custom tag (e.g. alpha, beta, latest).
 - `prerelease`, optional - if set, create releases that are pre-major or pre-release version marked as pre-release on GitHub.
-  Defaults false.
+- `skip-github-release`, optional - if set, skip creating GitHub releases.
 
 The file looks roughly like, you can change target branch, tokens and node version.
 ```yaml

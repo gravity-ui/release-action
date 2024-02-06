@@ -26,6 +26,9 @@ inputs:
   prerelease:
     description: property for prerelease package version
     required: false
+  skip-github-release:
+    description: skip creating GitHub releases
+    required: false
   npm-version:
     description: the version of the package
     required: false
@@ -74,6 +77,7 @@ runs:
         bump-minor-pre-major: true
         default-branch: ${{ inputs.default-branch }}
         prerelease: ${{ inputs.prerelease }}
+        skip-github-release: ${{ inputs.skip-github-release }}
     - name: Bump and commit prerelease version
       if: inputs.npm-version != ''
       run: |
