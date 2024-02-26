@@ -29,6 +29,9 @@ inputs:
   skip-github-release:
     description: skip creating GitHub releases
     required: false
+  skip-labeling:
+    description: skip setting labels on release PRs
+    required: false
   npm-version:
     description: the version of the package
     required: false
@@ -78,6 +81,7 @@ runs:
         default-branch: ${{ inputs.default-branch }}
         prerelease: ${{ inputs.prerelease }}
         skip-github-release: ${{ inputs.skip-github-release }}
+        skip-labeling: ${{ inputs.skip-labeling }}
     - name: Bump and commit prerelease version
       if: inputs.npm-version != ''
       run: |
