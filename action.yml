@@ -108,5 +108,5 @@ runs:
         npm publish --tag ${{ inputs.npm-dist-tag }} --access public
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-      if: steps.release.outputs.release_created == 'true' || inputs.npm-version != ''
+      if: steps.release.outputs.release_created == 'true' || inputs.skip-github-release == 'true' || inputs.npm-version != ''
       shell: bash
