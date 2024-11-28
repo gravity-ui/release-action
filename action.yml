@@ -70,7 +70,11 @@ runs:
         token: ${{ inputs.github-token }}
         release-type: node
         package-name: ${{ steps.package.outputs.name }}
-        changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
+        changelog-types: >
+          [{"type":"feat","section":"Features","hidden":false},
+          {"type":"fix","section":"Bug Fixes","hidden":false},
+          {"type":"refactor","section":"Code Refactoring","hidden":false},
+          {"type":"perf","section":"Performance Improvements","hidden":false}]
         bump-minor-pre-major: true
         default-branch: ${{ inputs.default-branch }}
         prerelease: ${{ inputs.prerelease }}
