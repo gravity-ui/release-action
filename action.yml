@@ -32,6 +32,13 @@ inputs:
   npm-preid:
     description:  npm version prerelease identifier, e.g preid=alpha gives you npm package version as v1.1.1-alpha.0
     required: false
+  changelog-types:
+    description: a changelog type's job is to build the CHANGELOG notes given a list of parsed commits
+    required: false
+    default: >
+      [{"type":"feat","section":"Features","hidden":false},
+      {"type":"fix","section":"Bug Fixes","hidden":false},
+      {"type":"perf","section":"Performance Improvements","hidden":false}]
 
 outputs:
   release-created:
@@ -70,7 +77,7 @@ runs:
         token: ${{ inputs.github-token }}
         release-type: node
         package-name: ${{ steps.package.outputs.name }}
-        changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false}]'
+        changelog-types: ${{ inputs.changelog-types }}
         bump-minor-pre-major: true
         default-branch: ${{ inputs.default-branch }}
         prerelease: ${{ inputs.prerelease }}
