@@ -6,6 +6,9 @@ description: |
   package
 
 inputs:
+  node-version-file:
+    description: File containing Node.js version to use for running linters, tests, etc
+    required: false
   node-version:
     description: Node.js version used for running linters, tests, etc
     required: false
@@ -57,10 +60,12 @@ runs:
       
         echo "${{ inputs.default-branch }}"
         echo "${{ inputs.node-version }}"
+        echo "${{ inputs.node-version-file }}"
       shell: bash
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
       with:
+        node-version-file: ${{ inputs.node-version-file }}
         node-version: ${{ inputs.node-version }}
         registry-url: 'https://registry.npmjs.org'
     - run: npm ci
