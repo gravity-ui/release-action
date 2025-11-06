@@ -18,6 +18,7 @@ Create the file `.github/workflows/release.yml` at the root of your repo, provid
 - `github-token` (who does create release PR)
 - `npm-token` (who does publish NPM package)
 - `node-version`, optional - which node version to use for running unit tests.
+- `node-version-file`, optional - which file containing node version to use for running unit tests. If node-version and node-version-file are both provided the action will use version from node-version.
 - `default-branch`, optional - branch to open release PR against.
 - `npm-dist-tag`, optional - if you want to release version of package with custom tag (e.g. alpha, beta, latest).
 - `prerelease`, optional - if set, create releases that are pre-major or pre-release version marked as pre-release on GitHub.
