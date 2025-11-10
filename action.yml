@@ -12,7 +12,6 @@ inputs:
   node-version:
     description: Node.js version used for running linters, tests, etc
     required: false
-    default: '14'
   github-token:
     description: PAT of a GitHub user which creates release PR
     required: true
@@ -62,8 +61,8 @@ runs:
         echo "${{ inputs.node-version }}"
         echo "${{ inputs.node-version-file }}"
       shell: bash
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v5
+    - uses: actions/setup-node@v6
       with:
         node-version-file: ${{ inputs.node-version-file }}
         node-version: ${{ inputs.node-version }}
