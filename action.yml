@@ -12,7 +12,6 @@ inputs:
   node-version:
     description: Node.js version used for running linters, tests, etc
     required: false
-    default: '14'
   github-token:
     description: PAT of a GitHub user which creates release PR
     required: true
