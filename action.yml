@@ -74,7 +74,7 @@ runs:
     - uses: codex-team/action-nodejs-package-info@v1
       if: inputs.npm-version == ''
       id: package
-    - uses: google-github-actions/release-please-action@v4
+    - uses: google-github-actions/release-please-action@v3
       if: inputs.npm-version == ''
       id: release
       with:
