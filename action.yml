@@ -6,6 +6,10 @@ description: |
   package
 
 inputs:
+  package-manager:
+    description: Package manager to use
+    required: false
+    default: 'npm'
   node-version-file:
     description: File containing Node.js version to use for running linters, tests, etc
     required: false
@@ -31,6 +35,10 @@ inputs:
   npm-version:
     description: the version of the package
     required: false
+  pnpm-version:
+    description: pnpm version to use when package-manager=pnpm
+    required: false
+    default: '10.17.1'
   npm-preid:
     description:  npm version prerelease identifier, e.g preid=alpha gives you npm package version as v1.1.1-alpha.0
     required: false
@@ -52,25 +60,45 @@ runs:
   steps:
     - name: Check inputs
       run: |
-        echo "${{ inputs.npm-version }}"
-        echo "${{ inputs.npm-dist-tag }}"
-        echo "${{ inputs.npm-preid }}"
-        echo "${{ inputs.prerelease }}"
-      
-        echo "${{ inputs.default-branch }}"
-        echo "${{ inputs.node-version }}"
-        echo "${{ inputs.node-version-file }}"
+        echo "package-manager=${{ inputs.package-manager }}"
+        echo "pnpm-version=${{ inputs.pnpm-version }}"
+        echo "npm-version=${{ inputs.npm-version }}"
+        echo "npm-dist-tag=${{ inputs.npm-dist-tag }}"
+        echo "npm-preid=${{ inputs.npm-preid }}"
+        echo "prerelease=${{ inputs.prerelease }}"
+
+        echo "default-branch=${{ inputs.default-branch }}"
+        echo "node-version=${{ inputs.node-version }}"
+        echo "node-version-file=${{ inputs.node-version-file }}"
       shell: bash
     - uses: actions/checkout@v5
+    - name: Setup pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
     - uses: actions/setup-node@v6
       with:
         node-version-file: ${{ inputs.node-version-file }}
         node-version: ${{ inputs.node-version }}
         registry-url: 'https://registry.npmjs.org'
-    - run: npm ci
+        cache: ${{ inputs.package-manager }}
+    - name: Install dependencies
       shell: bash
-    - run: npm test
+      run: |
+        if [ "${{ inputs.package-manager }}" = "pnpm" ]; then
+          pnpm install --frozen-lockfile
+        else
+          npm ci
+        fi
+    - name: Run tests
       shell: bash
+      run: |
+        if [ "${{ inputs.package-manager }}" = "pnpm" ]; then
+          pnpm test
+        else
+          npm test
+        fi
     - uses: codex-team/action-nodejs-package-info@v1
       if: inputs.npm-version == ''
       id: package
@@ -95,7 +123,11 @@ runs:
         git config --local user.email "111915794+gravity-ui-bot@users.noreply.github.com"
         git config --local user.name "gravity-ui-bot"
         
-        npm version ${{ inputs.npm-version }} --preid=${{ inputs.npm-preid }}
+        if [ "${{ inputs.package-manager }}" = "pnpm" ]; then
+          pnpm version ${{ inputs.npm-version }} --preid=${{ inputs.npm-preid }}
+        else
+          npm version ${{ inputs.npm-version }} --preid=${{ inputs.npm-preid }}
+        fi
       shell: bash
     - name: Extract branch name
       if: inputs.npm-version != ''
@@ -112,7 +144,12 @@ runs:
     - name: Publish version
       run: |
         echo "steps.release.outputs.release_created: ${{ steps.release.outputs.release_created }}"
-        npm publish --tag ${{ inputs.npm-dist-tag }} --access public
+
+        if [ "${{ inputs.package-manager }}" = "pnpm" ]; then
+          pnpm publish --tag ${{ inputs.npm-dist-tag }} --access public --no-git-checks
+        else
+          npm publish --tag ${{ inputs.npm-dist-tag }} --access public
+        fi
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
       if: steps.release.outputs.release_created == 'true' || inputs.npm-version != ''
