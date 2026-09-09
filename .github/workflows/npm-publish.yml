@@ -1,0 +1,99 @@
+name: Publish npm package
+
+on:
+  workflow_call:
+    inputs:
+      release-sha:
+        description: Full commit SHA created by the release job
+        required: true
+        type: string
+      environment-name:
+        description: GitHub Environment configured for npm trusted publishing
+        required: false
+        type: string
+        default: npm-publish
+      npm-dist-tag:
+        description: npm distribution tag assigned to the published version
+        required: false
+        type: string
+        default: latest
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish npm package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ inputs['environment-name'] }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate inputs
+        env:
+          RELEASE_SHA: ${{ inputs['release-sha'] }}
+          NPM_DIST_TAG: ${{ inputs['npm-dist-tag'] }}
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::release-sha must be a full 40-character lowercase commit SHA"
+            exit 1
+          fi
+
+          if [[ -z "$NPM_DIST_TAG" ]]; then
+            echo "::error::npm-dist-tag must not be empty"
+            exit 1
+          fi
+
+      - name: Checkout released commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs['release-sha'] }}
+          persist-credentials: false
+
+      - name: Verify checked out commit
+        env:
+          RELEASE_SHA: ${{ inputs['release-sha'] }}
+        shell: bash
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+
+          if [[ "$actual_sha" != "$RELEASE_SHA" ]]; then
+            echo "::error::Checked out $actual_sha instead of requested release commit $RELEASE_SHA"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Verify npm supports trusted publishing
+        shell: bash
+        run: |
+          npm_version="$(npm --version)"
+
+          node -e '
+            const [major = 0, minor = 0, patch = 0] = process.argv[1].split(/[.-]/).map(Number);
+            const supported =
+              major > 11 ||
+              (major === 11 && minor > 5) ||
+              (major === 11 && minor === 5 && patch >= 1);
+
+            if (!supported) {
+              console.error(`::error::npm ${process.argv[1]} does not support trusted publishing; npm 11.5.1 or newer is required`);
+              process.exit(1);
+            }
+          ' "$npm_version"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish
+        env:
+          NPM_DIST_TAG: ${{ inputs['npm-dist-tag'] }}
+        run: npm publish --access public --tag "$NPM_DIST_TAG"
