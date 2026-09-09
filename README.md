@@ -40,7 +40,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: gravity-ui/release-action@v2
+      - uses: gravity-ui/release-action@v3
         with:
           github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
           npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
@@ -66,8 +66,7 @@ jobs:
     steps:
       - name: Create GitHub release
         id: release_action
-        # Pin the action and reusable workflow to the same reviewed commit.
-        uses: gravity-ui/release-action@<FULL_COMMIT_SHA>
+        uses: gravity-ui/release-action@v3
         with:
           github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
           publish: 'false'
@@ -78,7 +77,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: gravity-ui/release-action/.github/workflows/npm-publish.yml@<FULL_COMMIT_SHA>
+    uses: gravity-ui/release-action/.github/workflows/npm-publish.yml@v3
     with:
       release-sha: ${{ needs.release.outputs.sha }}
       environment-name: npm-publish
@@ -105,8 +104,11 @@ that permission: permissions can only be maintained or reduced across reusable w
 secrets, uses a GitHub-hosted runner and Node.js 24, verifies that npm is at least 11.5.1, and publishes only after
 checking out and verifying the supplied full commit SHA.
 
-Pin both references to the same full commit SHA. A mutable branch or tag can otherwise change code that runs with
-OIDC permission without a corresponding change in the caller repository.
+Publish version 3 before switching consumers to these examples: merge the release-action changes, then create a
+GitHub Release with the `v3` tag at the resulting commit. Verify that this tag contains both `action.yml` and
+`.github/workflows/npm-publish.yml`. Protect release tags and restrict write access to this repository, because
+moving `v3` changes code that runs with OIDC permission. Consumers that require every workflow update to be reviewed
+in their own repository can use the full commit SHA behind `v3` instead.
 
 This reusable workflow is intentionally limited to public root packages that use npm, have a `package-lock.json`,
 and can install dependencies without registry credentials. Use a repository-specific publish job for pnpm, private
