@@ -2,8 +2,8 @@ name: gravity-ui-release-action
 
 description: |
   Organizes CI/CD pipeline for all Gravity UI packages - generate Changelog and bump version automatically,
-  create a release PR which once merged results in creating a new GitHub release and publishing a new version of NPM
-  package
+  create a release PR which once merged results in creating a new GitHub release and, optionally, publishing a new
+  version of an NPM package
 
 inputs:
   package-manager:
@@ -19,9 +19,13 @@ inputs:
   github-token:
     description: PAT of a GitHub user which creates release PR
     required: true
+  publish:
+    description: Whether to publish the package from this action. Set to false to publish in a separate job
+    required: false
+    default: 'true'
   npm-token:
-    description: PAT of an NPM user which publishes the package
-    required: true
+    description: Token used by the built-in publish step. Not required when publish is false
+    required: false
   default-branch:
     description: branch to open release PR against (detected by default)
     required: false
@@ -52,15 +56,31 @@ inputs:
 
 outputs:
   release-created:
-    description: If the release has been already created or it was just the release PR
+    description: Whether release-please created a GitHub release
     value: ${{ steps.release.outputs.release_created }}
+  release-sha:
+    description: Commit SHA associated with the GitHub release
+    value: ${{ steps.release.outputs.sha }}
 
 runs:
   using: composite
   steps:
+    - name: Validate publish input
+      if: inputs.publish != 'true' && inputs.publish != 'false'
+      run: |
+        echo "::error::The publish input must be either 'true' or 'false'"
+        exit 1
+      shell: bash
+    - name: Validate npm token
+      if: inputs.publish == 'true' && inputs.npm-token == ''
+      run: |
+        echo "::error::The npm-token input is required when the built-in publish step is enabled"
+        exit 1
+      shell: bash
     - name: Check inputs
       run: |
         echo "package-manager=${{ inputs.package-manager }}"
+        echo "publish=${{ inputs.publish }}"
         echo "pnpm-version=${{ inputs.pnpm-version }}"
         echo "npm-version=${{ inputs.npm-version }}"
         echo "npm-dist-tag=${{ inputs.npm-dist-tag }}"
@@ -152,5 +172,5 @@ runs:
         fi
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
-      if: steps.release.outputs.release_created == 'true' || inputs.npm-version != ''
+      if: inputs.publish == 'true' && (steps.release.outputs.release_created == 'true' || inputs.npm-version != '')
       shell: bash
